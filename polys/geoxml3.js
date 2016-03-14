@@ -848,6 +848,18 @@ var coordListA = [];
       doc.markers.push(marker);
     }
 
+    if (parserOptions.click)
+      google.maps.event.addListener(marker, 'click', e => parserOptions.click(e, placemark.name));
+
+    if (parserOptions.mouseOver)
+      google.maps.event.addListener(marker, 'mouseover', e => parserOptions.mouseOver(e, placemark.name));
+
+    if (parserOptions.mouseOut)
+      google.maps.event.addListener(marker, 'mouseout', e => parserOptions.mouseOut(e, placemark.name));
+
+    if (parserOptions.mouseMove)
+      google.maps.event.addListener(marker, 'mousemove', e => parserOptions.mouseMove(e, placemark.name));
+
     // Set up and create the infowindow if it is not suppressed
     if (!parserOptions.suppressInfoWindows) {
       var infoWindowOptions = geoXML3.combineOptions(parserOptions.infoWindowOptions, {
@@ -929,6 +941,19 @@ var createPolyline = function(placemark, doc) {
     var p = new google.maps.Polyline(polyOptions);
   }
   p.bounds = bounds;
+
+  if (parserOptions.click)
+    google.maps.event.addListener(p, 'click', e => parserOptions.click(e, placemark.name));
+
+  if (parserOptions.mouseOver)
+    google.maps.event.addListener(p, 'mouseover', e => parserOptions.mouseOver(e, placemark.name));
+
+  if (parserOptions.mouseOut)
+    google.maps.event.addListener(p, 'mouseout', e => parserOptions.mouseOut(e, placemark.name));
+
+  if (parserOptions.mouseMove)
+    google.maps.event.addListener(p, 'mousemove', e => parserOptions.mouseMove(e, placemark.name));
+
   // setup and create the infoWindow if it is not suppressed
   if (!parserOptions.suppressInfoWindows) {
     var infoWindowOptions = geoXML3.combineOptions(parserOptions.infoWindowOptions, {
@@ -1010,6 +1035,19 @@ var createPolygon = function(placemark, doc) {
   });
   var p = new google.maps.Polygon(polyOptions);
   p.bounds = bounds;
+
+  if (parserOptions.click)
+    google.maps.event.addListener(p, 'click', e => parserOptions.click(e, placemark.name));
+
+  if (parserOptions.mouseOver)
+    google.maps.event.addListener(p, 'mouseover', e => parserOptions.mouseOver(e, placemark.name));
+
+  if (parserOptions.mouseOut)
+    google.maps.event.addListener(p, 'mouseout', e => parserOptions.mouseOut(e, placemark.name));
+
+  if (parserOptions.mouseMove)
+    google.maps.event.addListener(p, 'mousemove', e => parserOptions.mouseMove(e, placemark.name));
+
   if (!parserOptions.suppressInfoWindows) {
     var infoWindowOptions = geoXML3.combineOptions(parserOptions.infoWindowOptions, {
       content: '<div class="geoxml3_infowindow"><h3>' + placemark.name +
