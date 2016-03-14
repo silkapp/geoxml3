@@ -725,7 +725,7 @@ var coordListA = [];
         // Options that get invoked after parsing completes
 	  if (parserOptions.zoom && !!doc.internals.bounds &&
 	      !doc.internals.bounds.isEmpty() && !!parserOptions.map) {
-          parserOptions.map.fitBounds(doc.internals.bounds);
+          //parserOptions.map.fitBounds(doc.internals.bounds);
         }
         if (parserOptions.afterParse) {
           parserOptions.afterParse(doc.internals.docSet);
