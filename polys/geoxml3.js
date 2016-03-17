@@ -849,16 +849,16 @@ var coordListA = [];
     }
 
     if (parserOptions.click)
-      google.maps.event.addListener(marker, 'click', e => parserOptions.click(e, placemark.name));
+      google.maps.event.addListener(marker, 'click', function (e) { parserOptions.click(e, placemark.name); });
 
     if (parserOptions.mouseOver)
-      google.maps.event.addListener(marker, 'mouseover', e => parserOptions.mouseOver(e, placemark.name));
+      google.maps.event.addListener(marker, 'mouseover', function (e) { parserOptions.mouseOver(e, placemark.name); });
 
     if (parserOptions.mouseOut)
-      google.maps.event.addListener(marker, 'mouseout', e => parserOptions.mouseOut(e, placemark.name));
+      google.maps.event.addListener(marker, 'mouseout', function (e) { parserOptions.mouseOut(e, placemark.name); });
 
     if (parserOptions.mouseMove)
-      google.maps.event.addListener(marker, 'mousemove', e => parserOptions.mouseMove(e, placemark.name));
+      google.maps.event.addListener(marker, 'mousemove', function (e) { parserOptions.mouseMove(e, placemark.name); });
 
     // Set up and create the infowindow if it is not suppressed
     if (!parserOptions.suppressInfoWindows) {
@@ -943,16 +943,16 @@ var createPolyline = function(placemark, doc) {
   p.bounds = bounds;
 
   if (parserOptions.click)
-    google.maps.event.addListener(p, 'click', e => parserOptions.click(e, placemark.name));
+    google.maps.event.addListener(p, 'click', function (e) { parserOptions.click(e, placemark.name); });
 
   if (parserOptions.mouseOver)
-    google.maps.event.addListener(p, 'mouseover', e => parserOptions.mouseOver(e, placemark.name));
+    google.maps.event.addListener(p, 'mouseover', function (e) { parserOptions.mouseOver(e, placemark.name); });
 
   if (parserOptions.mouseOut)
-    google.maps.event.addListener(p, 'mouseout', e => parserOptions.mouseOut(e, placemark.name));
+    google.maps.event.addListener(p, 'mouseout', function (e) { parserOptions.mouseOut(e, placemark.name); });
 
   if (parserOptions.mouseMove)
-    google.maps.event.addListener(p, 'mousemove', e => parserOptions.mouseMove(e, placemark.name));
+    google.maps.event.addListener(p, 'mousemove', function (e) { parserOptions.mouseMove(e, placemark.name); });
 
   // setup and create the infoWindow if it is not suppressed
   if (!parserOptions.suppressInfoWindows) {
@@ -1037,16 +1037,16 @@ var createPolygon = function(placemark, doc) {
   p.bounds = bounds;
 
   if (parserOptions.click)
-    google.maps.event.addListener(p, 'click', e => parserOptions.click(e, placemark.name));
+    google.maps.event.addListener(p, 'click', function (e) { parserOptions.click(e, placemark.name); });
 
   if (parserOptions.mouseOver)
-    google.maps.event.addListener(p, 'mouseover', e => parserOptions.mouseOver(e, placemark.name));
+    google.maps.event.addListener(p, 'mouseover', function (e) { parserOptions.mouseOver(e, placemark.name); });
 
   if (parserOptions.mouseOut)
-    google.maps.event.addListener(p, 'mouseout', e => parserOptions.mouseOut(e, placemark.name));
+    google.maps.event.addListener(p, 'mouseout', function (e) { parserOptions.mouseOut(e, placemark.name); });
 
   if (parserOptions.mouseMove)
-    google.maps.event.addListener(p, 'mousemove', e => parserOptions.mouseMove(e, placemark.name));
+    google.maps.event.addListener(p, 'mousemove', function (e) { parserOptions.mouseMove(e, placemark.name); });
 
   if (!parserOptions.suppressInfoWindows) {
     var infoWindowOptions = geoXML3.combineOptions(parserOptions.infoWindowOptions, {
