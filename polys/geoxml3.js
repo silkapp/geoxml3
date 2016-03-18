@@ -457,7 +457,7 @@ var coordListA = [];
                  innerBoundaryIs: [{coordinates: []}]
                }
                placemark.Polygon[pg].outerBoundaryIs = processPlacemarkCoords(polygonNodes[pg], "outerBoundaryIs", placemark.name + "-" + gn + "-" + pg + "-1");
-               placemark.Polygon[pg].innerBoundaryIs = processPlacemarkCoords(polygonNodes[pg], "innerBoundaryIs", placemark.name + "-" + gn + "-" + pg + "-1");
+               placemark.Polygon[pg].innerBoundaryIs = processPlacemarkCoords(polygonNodes[pg], "innerBoundaryIs", placemark.name + "-" + gn + "-" + pg + "-2");
             }
             coordList = placemark.Polygon[0].outerBoundaryIs;
             break;
