@@ -300,7 +300,9 @@ function getBooleanValue(node) {
   else return true;
 }
 
-function processPlacemarkCoords(node, tag) {
+var coordsCache = {};
+function processPlacemarkCoords(node, tag, cacheKey) {
+  if (coordsCache[cacheKey]) return coordsCache[cacheKey];
    var parent = node.getElementsByTagName(tag);
 var coordListA = [];
   for (var i=0; i<parent.length; i++) {
@@ -332,6 +334,7 @@ var coordListA = [];
     coordListA.push({coordinates: coordList});
   }
 }
+  coordsCache[cacheKey] = coordListA;
   return coordListA;
 }
 
@@ -434,7 +437,7 @@ var coordListA = [];
         // What sort of placemark?
         switch(Geometry) {
           case "Point":
-            placemark.Point = processPlacemarkCoords(node, "Point")[0];
+            placemark.Point = processPlacemarkCoords(node, "Point", placemark.name + "-" + gn)[0];
             if (!!window.google && !!google.maps)
               placemark.latlng = new google.maps.LatLng(placemark.Point.coordinates[0].lat, placemark.Point.coordinates[0].lng);
             pathLength = 1;
@@ -453,15 +456,15 @@ var coordListA = [];
                  outerBoundaryIs: {coordinates: []},
                  innerBoundaryIs: [{coordinates: []}]
                }
-               placemark.Polygon[pg].outerBoundaryIs = processPlacemarkCoords(polygonNodes[pg], "outerBoundaryIs");
-               placemark.Polygon[pg].innerBoundaryIs = processPlacemarkCoords(polygonNodes[pg], "innerBoundaryIs");
+               placemark.Polygon[pg].outerBoundaryIs = processPlacemarkCoords(polygonNodes[pg], "outerBoundaryIs", placemark.name + "-" + gn + "-" + pg + "-1");
+               placemark.Polygon[pg].innerBoundaryIs = processPlacemarkCoords(polygonNodes[pg], "innerBoundaryIs", placemark.name + "-" + gn + "-" + pg + "-1");
             }
             coordList = placemark.Polygon[0].outerBoundaryIs;
             break;
 
           case "LineString":
             pathLength = 0;
-            placemark.LineString = processPlacemarkCoords(node,"LineString");
+            placemark.LineString = processPlacemarkCoords(node,"LineString", placemark.name + "-" + gn);
             break;
 
           default:
