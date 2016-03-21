@@ -256,6 +256,27 @@ function processStyle(thisNode, styles, styleID) {
       return styles[styleID];
 }
 
+function processStyleJson(node, styles, styleID) {
+  styles[styleID] = styles[styleID] || clone(defaultStyle);
+
+  styles[styleID].scale = 1.0;
+  if (node.LineStyle)
+  {
+    styles[styleID].color = node.LineStyle.color || defaultStyle.color;
+    styles[styleID].colorMode = node.LineStyle.colorMode || defaultStyle.colorMode;
+    styles[styleID].width = node.LineStyle.width || defaultStyle.width;
+  }
+
+  if (node.PolyStyle)
+  {
+      styles[styleID].outline = node.PolyStyle.outline === undefined ? defaultStyle.outline : !!node.PolyStyle.outline;
+      styles[styleID].fill = node.PolyStyle.fill === undefined ? defaultStyle.fill : !!node.PolyStyle.fill;
+      styles[styleID].colorMode = node.PolyStyle.colorMode || defaultStyle.colorMode;
+      styles[styleID].fillcolor = node.PolyStyle.color || defaultStyle.fillcolor;
+  }
+  return styles[styleID];
+}
+
 // from http://stackoverflow.com/questions/122102/what-is-the-most-efficient-way-to-clone-a-javascript-object
 // http://keithdevens.com/weblog/archive/2007/Jun/07/javascript.clone
   function clone(obj){
@@ -336,6 +357,22 @@ var coordListA = [];
 }
   coordsCache[cacheKey] = coordListA;
   return coordListA;
+}
+
+function processPlacemarkCoordsJson (input)
+{
+  var coordList = input.map(function(clist)
+                   {
+                     return { coordinates : clist.map(function (c)
+                                 {
+                                   return { lat : c[1]
+                                          , lng : c[0]
+                                          , alt : c[2]
+                                          }
+                                 })
+                            }
+                   });
+  return coordList;
 }
 
   var render = function (responseXML, doc) {
@@ -1080,6 +1117,223 @@ var createPolygon = function(placemark, doc) {
   return p;
 }
 
+  var parseKmlJson = function (json, docSet) {
+    // Internal values for the set of documents as a whole
+    var internals = {
+      parser: this,
+      docSet: docSet || [],
+      remaining: 1,
+      parseOnly: !(parserOptions.afterParse || parserOptions.processStyles)
+    };
+
+    thisDoc = new Object();
+    thisDoc.internals = internals;
+    internals.docSet.push(thisDoc);
+    renderJson(json,thisDoc);
+  }
+
+  var renderJson = function(json, doc)
+  {
+      if (!doc) {
+          throw 'geoXML3 internal error: render called with null document';
+      } else { //no errors
+          var i;
+          var styles = {};
+          doc.placemarks = [];
+          doc.groundoverlays = [];
+          doc.ggroundoverlays = [];
+          doc.networkLinks = [];
+          doc.gpolygons = [];
+          doc.gpolylines = [];
+          doc.markers = [];
+          doc.styles = {};
+
+          // Parse placemarks
+          if (!!doc.reload && !!doc.markers) {
+              for (i = 0; i < doc.markers.length; i++) {
+                  doc.markers[i].active = false;
+              }
+          }
+          var placemark, node, coords, path, marker, poly;
+          var placemark, coords, path, pathLength, marker, polygonNodes, coordList;
+          var placemarkNodes = json.document.placemark;
+          for (pm = 0; pm < placemarkNodes.length; pm++) {
+              // Init the placemark object
+              node = placemarkNodes[pm];
+              placemark = { name: node.name
+                          , description: node.description
+                          , styleUrl: node.styleUrl
+                          , id: node.id
+                          };
+
+              placemark.style = doc.styles[placemark.styleUrl] || clone(defaultStyle);
+
+              // inline style overrides shared style
+              var inlineStyles = node.Style ? [node.Style] : [];
+              if (inlineStyles && (inlineStyles.length > 0)) {
+                  var style = processStyleJson(inlineStyles[0], doc.styles, "inline");
+                  processStyleID(style);
+                  if (style) placemark.style = style;
+              }
+
+              if (/^https?:\/\//.test(placemark.description)) {
+                  placemark.description = ['<a href="', placemark.description, '">', placemark.description, '</a>'].join('');
+              }
+
+              var Geometry = null;
+
+              // process MultiGeometry
+              function processGeometry (node)
+              {
+                if (node.MultiGeometry)
+                {
+                  node.MultiGeometry.forEach(function (n) { processGeometry(n) });
+                }
+                else if (node.Polygon)
+                {
+                  if (!placemark.Polygon) placemark.Polygon = [];
+                  var polygon = { outerBoundaryIs: { coordinates: [] }, innerBoundaryIs: [{ coordinates: [] }] };
+                  if (node.Polygon.outerBoundaryIs)
+                    polygon.outerBoundaryIs = processPlacemarkCoordsJson(node.Polygon.outerBoundaryIs.map(function (lr) { return lr.LinearRing[0].coordinates }));
+                  if (node.Polygon.innerBoundaryIs)
+                    polygon.innerBoundaryIs = processPlacemarkCoordsJson(node.Polygon.innerBoundaryIs.map(function (lr) { return lr.LinearRing[0].coordinates }));
+                  placemark.Polygon.push(polygon);
+                }
+              }
+
+              processGeometry(node.geometry);
+              doc.placemarks.push(placemark);
+
+              if (!!window.google && !!google.maps) {
+                  if (placemark.Point) {
+                      if (!!window.google && !!google.maps) {
+                          doc.bounds = doc.bounds || new google.maps.LatLngBounds();
+                          doc.bounds.extend(placemark.latlng);
+                      }
+
+                      if (!!parserOptions.createMarker) {
+                          // User-defined marker handler
+                          parserOptions.createMarker(placemark, doc);
+                      } else { // !user defined createMarker
+                          // Check to see if this marker was created on a previous load of this document
+                          var found = false;
+                          if (!!doc) {
+                              doc.markers = doc.markers || [];
+                              if (doc.reload) {
+                                  for (var j = 0; j < doc.markers.length; j++) {
+                                      if ((doc.markers[j].id == placemark.id) ||
+                                          // if no id, check position
+                                          (!doc.markers[j].id &&
+                                              (doc.markers[j].getPosition().equals(placemark.latlng)))) {
+                                          found = doc.markers[j].active = true;
+                                          break;
+                                      }
+                                  }
+                              }
+                          }
+
+                          if (!found) {
+                              // Call the built-in marker creator
+                              marker = createMarker(placemark, doc);
+                              if (marker) {
+                                  marker.active = true;
+                                  marker.id = placemark.id;
+                              }
+                          }
+                      }
+                  }
+                  if (placemark.Polygon) { // poly test 2
+                      if (!!doc) {
+                          doc.gpolygons = doc.gpolygons || [];
+                      }
+
+                      if (!!parserOptions.createPolygon) {
+                          // User-defined polygon handler
+                          poly = parserOptions.createPolygon(placemark, doc);
+                      } else { // ! user defined createPolygon
+                          // Check to see if this marker was created on a previous load of this document
+                          poly = createPolygon(placemark, doc);
+                          poly.active = true;
+                      }
+                      if (!!window.google && !!google.maps) {
+                          doc.bounds = doc.bounds || new google.maps.LatLngBounds();
+                          doc.bounds.union(poly.bounds);
+                      }
+                  }
+                  if (placemark.LineString) { // polyline
+                      if (!!doc) {
+                          doc.gpolylines = doc.gpolylines || [];
+                      }
+                      if (!!parserOptions.createPolyline) {
+                          // User-defined polyline handler
+                          poly = parserOptions.createPolyline(placemark, doc);
+                      } else { // ! user defined createPolyline
+                          // Check to see if this marker was created on a previous load of this document
+                          poly = createPolyline(placemark, doc);
+                          poly.active = true;
+                      }
+                      if (!!window.google && !!google.maps) {
+                          doc.bounds = doc.bounds || new google.maps.LatLngBounds();
+                          doc.bounds.union(poly.bounds);
+                      }
+                  }
+              }
+          } // placemark loop
+
+          if (!!doc.reload && !!doc.markers) {
+              for (i = doc.markers.length - 1; i >= 0; i--) {
+                  if (!doc.markers[i].active) {
+                      if (!!doc.markers[i].infoWindow) {
+                          doc.markers[i].infoWindow.close();
+                      }
+                      doc.markers[i].setMap(null);
+                      doc.markers.splice(i, 1);
+                  }
+              }
+          }
+
+          // Parse ground overlays
+          if (!!doc.reload && !!doc.groundoverlays) {
+              for (i = 0; i < doc.groundoverlays.length; i++) {
+                  doc.groundoverlays[i].active = false;
+              }
+          }
+
+          if (!!doc) {
+              doc.groundoverlays = doc.groundoverlays || [];
+          }
+      }
+
+      if (!!doc.bounds && !!window.google && !!google.maps) {
+          doc.internals.bounds = doc.internals.bounds || new google.maps.LatLngBounds();
+          doc.internals.bounds.union(doc.bounds);
+      }
+      if (!!doc.markers || !!doc.groundoverlays || !!doc.gpolylines || !!doc.gpolygons) {
+          doc.internals.parseOnly = false;
+      }
+
+      doc.internals.remaining -= 1;
+      if (doc.internals.remaining === 0) {
+          // We're done processing this set of KML documents
+          // Options that get invoked after parsing completes
+          if (parserOptions.zoom && !!doc.internals.bounds &&
+              !doc.internals.bounds.isEmpty() && !!parserOptions.map) {
+              //parserOptions.map.fitBounds(doc.internals.bounds);
+          }
+          if (parserOptions.afterParse) {
+              parserOptions.afterParse(doc.internals.docSet);
+          }
+
+          if (!doc.internals.parseOnly) {
+              // geoXML3 is not being used only as a real-time parser, so keep the processed documents around
+              for (var i = 0; i < doc.internals.docSet.length; i++) {
+                  docs.push(doc.internals.docSet[i]);
+              }
+          }
+          google.maps.event.trigger(doc.internals.parser, 'parsed');
+      }
+  };
+
   return {
     // Expose some properties and methods
 
@@ -1089,6 +1343,7 @@ var createPolygon = function(placemark, doc) {
     parse:          parse,
     render:         render,
     parseKmlString: parseKmlString,
+    parseKmlJson: parseKmlJson,
     hideDocument:   hideDocument,
     showDocument:   showDocument,
     processStyles:  processStyles,
